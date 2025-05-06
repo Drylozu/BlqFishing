@@ -1,0 +1,92 @@
+<div style="padding: 20px;">
+  <h1>Market</h1>
+  <div class="market">
+    <div class="market-header">
+      <p>Name</p>
+      <p>Description</p>
+      <p>Cost</p>
+    </div>
+
+    <div class="market-content"></div>
+  </div>
+
+  <style is:global>
+    .market {
+      width: 840px;
+      height: 320px;
+    }
+
+    .market-header,
+    .market-content > div {
+      display: grid;
+      grid-template-columns: 1fr 2fr 0.4fr;
+    }
+
+    .market-header {
+      border-bottom: 1px solid #000000cc;
+    }
+
+    .market-content {
+      height: 320px;
+      overflow: auto;
+    }
+
+    .market-content > div {
+      border-bottom: 1px solid #00000031;
+    }
+  </style>
+</div>
+
+<script>
+  type MarketData = {
+    items: ItemData[];
+    lastFetched: number;
+  };
+  type ItemData = {
+    name: string;
+    description: string;
+    cost: number;
+  };
+
+  const lastData = localStorage.getItem('marketData');
+  const lastDataParsed = lastData ? (JSON.parse(lastData) as MarketData) : null;
+
+  let data = lastDataParsed;
+
+  function updateTable() {
+    const tbody = document.querySelector(
+      '.market-content'
+    ) as HTMLTableSectionElement;
+    tbody.innerHTML = '';
+
+    if (!data) return;
+
+    data.items.forEach((item) => {
+      const div = document.createElement('div');
+      div.innerHTML = [item.name, item.description, item.cost]
+        .map((text) => `<p>${text}</p>`)
+        .join('');
+      tbody.appendChild(div);
+    });
+  }
+
+  async function fetchmarketData() {
+    try {
+      const res = await fetch('https://api-game.bloque.app/game/market');
+      const body = (await res.json()) as MarketData;
+
+      const newData = { ...body, lastFetched: Date.now() };
+
+      localStorage.setItem('marketData', JSON.stringify(newData));
+
+      data = newData;
+    } catch {}
+
+    updateTable();
+
+    setTimeout(fetchmarketData, 30000);
+  }
+
+  updateTable();
+  fetchmarketData();
+</script>
